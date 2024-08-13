@@ -542,3 +542,38 @@ Vercel에서 복사한 내용을 붙여넣는다.
 > 데이터베이스 쿼리 인터페이스에서 `DROP TABLE tablename`을 실행하여 기존 테이블을 삭제할 수 있음!
 
 ### Exploring your database
+
+다시 Vercel로 돌아와서 Database의 `Data` 탭을 클릭하면  
+`users`, `customers`, `invoices`, `revenue` 와 같이 새로운 테이블이 생성된 것을 볼 수 있다.  
+![vercel-data-table](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fdatabase-tables.png&w=1080&q=75)
+
+각 테이블을 선택하여 `placeholder-data.ts` 파일의 데이터와 일치하는지를 확인할 수 있다.
+
+### Executing queries (쿼리 실행)
+
+`"query"` 탭으로 전환하여 데이터베이스와 상호작용을 할 수 있는데,  
+이 섹션은 standard SQL 명령을 지원한다.
+
+예를 들어 `DROP TABLE customers` 를 입력하면 customers 테이블과 해당 데이터들이 삭제된다.  
+**그러니 조심해야 함!**
+
+첫번째 데이터베이스 쿼리를 실행해봅시다.  
+아래 SQL 코드를 Vercel 인터페이스에 입력하고 실행해봅시다!
+
+```SQL
+SELECT invoices.amount, customers.name
+FROM invoices
+JOIN customers ON invoices.customer_id = customers.id
+WHERE invoices.amount = 666;
+```
+
+---
+
+## Fetching Data
+
+지금까지 데이터베이스를 생성하고 seed로 초기화해봤는데, 이번엔 애플리케이션에서 데이터를 가져오는 다양한 방법과  
+대시보드 overview 페이지를 구축하는 방법에 대해 알아봅시다.
+
+### Choosing how to fetch data
+
+#### API layer
