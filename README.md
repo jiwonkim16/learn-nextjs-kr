@@ -295,3 +295,237 @@ export default function Page() {
 ![next-create-page](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Frouting-solution.png&w=1920&q=75)
 
 ### Creating the dashboard layout
+
+dashboard 에는 일반적으로 여러 페이지에서 공유되는 고유한 형태의 네비게이션이 있다.
+
+Next.js에서는 이렇게 여러 페이지 간에 공유되는 UI를 만들기 위해 `layout.tsx` 라는 특별한 파일을 사용할 수 있는데
+
+`/dashboard` 폴더 내에 `layout.tsx` 라는 파일을 추가하고 아래와 같이 입력해보자.
+
+```javascript
+import SideNav from "@/app/ui/dashboard/sidenav";
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-screen flex-col md:flex-row md:overflow-hidden">
+      <div className="w-full flex-none md:w-64">
+        <SideNav />
+      </div>
+      <div className="flex-grow p-6 md:overflow-y-auto md:p-12">{children}</div>
+    </div>
+  );
+}
+```
+
+위 코드를 살펴보면 먼저, `<SideNav>` 컴포넌트를 `Layout`에 import 하고 있는데,  
+이 파일에 임포트한 모든 컴포넌트는 레이아웃의 일부가 된다.
+
+`<Layout />` 컴포넌트는 `children` prop을 받으며, 이 `children`은 페이지이거나 다른 레이아웃일 수 있다.
+
+현재 프로젝트의 경우엔 `/dashboard` 내부의 페이지들이 자동으로 `<Layout />` 안에 중첩된다.
+
+![next-layout](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fshared-layout.png&w=1920&q=75)
+
+이처럼 Next.js에서 `Layout`의 장점은 `Page` 컴포넌트만 업데이트 되고 `Layout` 은 다시 렌더링되지 않는다는 것이며,
+
+이를 `부분 렌더링(partial rendering)` 이라고 한다.
+![next-partial-rendering](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fpartial-rendering-dashboard.png&w=1920&q=75)
+
+### Root Layout
+
+이전에 `Inter` 폰트를 다른 레이아웃 `/app/layout.tsx`에 가져왔는데
+
+이를 **`Root Layout`** 이라고 하며, 필수로 존재해야 한다.  
+루트 레이아웃에 추가한 모든 UI는 애플리케이션의 모든 페이지에서 공유되며,  
+`<html>`, `<body>` 태그를 수정하고 메타데이터를 추가할 수 있다.
+
+---
+
+## Navigating Between Pages
+
+### Why optimize navigation?
+
+페이지 간 링크를 만드려면 전통적인 방식으로는 `<a>` 태그를 사용했었다.  
+이전에 추가한 `SideNav` 에는 이런 전통적 방식에 따라 `<a>` 태그로 페이지 이동을 하고 있는데
+
+클릭 했을 때, 무슨 일이 일어나는지 보면,  
+페이지 전체가 **`refresh`** 되는 것을 볼 수 있다.
+
+---
+
+Next.js에선 페이지 간에 링크를 만들기 위해 **`<Link />`** 컴포넌트를 사용할 수 있다.
+
+`<Link />` 컴포넌트를 사용하면 자바스크립트를 사용하여 **_<u>클라이언트-사이드 페이지 이동</u>_** 이 가능하다
+
+> Client-side Navigation은 Next.js에서 사용자가 페이지 간 이동 시 페이지를 다시 로드하지 않고 자바스크립트를 사용하여 빠르게 페이지를 전환하는 방법을 뜻함.
+
+> 🔥 주요 특징
+>
+> 1. 자바스크립트를 이용한 페이지 전환 : Link 컴포넌트를 사용하여 필요한 부분만 업데이트하므로 전환이 빠름.
+> 2. 코드 스플리팅과 prefetching : 브라우저의 뷰포트에 `<Link />` 가 나타나면 Next.js는 링크된 페이지의 코드를 백그라운드에서 `prefetching` 함.
+
+기존 `/app/ui/dashboard/nav-links.tsx` 파일의 `<a>` 태그를 `next/link` 모듈의 `<Link />` 태그로 변경하는데  
+`<a href="...">` 대신 `<Link href="...">`로 대체해주면 된다.
+
+그리고 다시 페이지 전환을 해보면 페이지 전체 refresh 없이 페이지 이동이 가능하다.
+
+즉, 애플리케이션의 일부가 서버에서 렌더링되기는 하지만 전체 페이지 새로고침이 없어 웹앱처럼 느껴지는데 이유는
+
+#### Automatic code-splitting and prefetching 때문이다.
+
+페이지 이동 경험을 향상시키기 위해 Next.js는 라우트 세그먼트별로 애플리케이션 코드를 자동으로 분할한다.  
+이는 브라우저가 초기 로드 시 모든 애플리케이션 코드를 로드하는 전통적인 React **_<u>SPA</u>_** 와는 다른데,
+
+라우트 별로 코드를 분할하면 페이지가 격리되고 특정 페이지에서 오류가 발생하더라도 나머지 애플리케이션은 여전히 작동한다.
+
+또한, production 환경에서 브라우저 뷰포트에 `<Link>` 컴포넌트가 나타나면 Next.js가 자동으로 연결된 경로의 코드를 백그라운드에서 `prefetching(사전로드)` 함으로서  
+사용자가 링크를 클릭할 때 대상 페이지의 코드는 이미 백그라운드에서 로드되어 페이지 전환이 거의 즉시 발생한다.
+
+### Pattern : Showing active links
+
+### 패턴 : 활성화된 링크 표시
+
+사용자에게 현재 어떤 페이지에 있는지 나타내기 위해 활성화된 링크를 표시하는 것은 일반적인 UI 패턴이다.
+
+이를 위해서 사용자의 현재 경로를 URL에서 가져와야 하는데  
+Next.js는 **`usePathname()`** 이라는 훅을 제공하며, 이를 사용하여 경로를 확인하고 해당 패턴을 구현할 수 있다.
+
+`usePathname()` 은 훅이므로 `nav-links.tsx` 를 클라이언트 컴포넌트로 변환해야 하는데,  
+이를 위해 파일 최상단에 React의 **`"use client"`** 지시어를 추가한 다음,  
+`next/navigtion`에서 `usePathname()` 을 가져오면 된다.
+
+```javascript
+"use client";
+
+import {
+  UserGroupIcon,
+  HomeIcon,
+  InboxIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+// ...
+```
+
+그리고 `<NavLinks />` 컴포넌트 내에서 `pathname`이라는 변수에 경로를 할당한다.
+
+```javascript
+export default function NavLinks() {
+  const pathname = usePathname();
+  // ...
+}
+```
+
+`clsx` 라이브러리는 이전에 소개한 것처럼 클래스 이름을 조건부로 적용하는데 사용할 수 있으므로,  
+`link.href`가 `pathname`과 일치하는지 여부에 따라 색상을 다르게 표현할 수 있다.
+
+```javascript
+"use client";
+
+import {
+  UserGroupIcon,
+  HomeIcon,
+  DocumentDuplicateIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import clsx from "clsx";
+
+// ...
+
+export default function NavLinks() {
+  const pathname = usePathname();
+
+  return (
+    <>
+      {links.map((link) => {
+        const LinkIcon = link.icon;
+        return (
+          <Link
+            key={link.name}
+            href={link.href}
+            className={clsx(
+              "flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3",
+              {
+                "bg-sky-100 text-blue-600": pathname === link.href,
+              }
+            )}
+          >
+            <LinkIcon className="w-6" />
+            <p className="hidden md:block">{link.name}</p>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+```
+
+---
+
+## Setting Up Your Database
+
+지금까지 대시보드에서 작업을 해왔는데 앞으로 계속 작업을 하기 위해선 데이터가 필요하다.  
+이번 챕터에서는 `@vercel/postgres`를 활용하여 `PostgreSQL` 데이터베이스를 설정해보려 한다.
+
+### Create a Github repository
+
+시작하기에 앞서 아직 레포지토리를 깃허브에 푸쉬하지 않았다면 푸쉬를 하자.  
+이렇게 하면 데이터베이스를 설정하고 배포하는 것이 더 쉬워진다.
+
+### Vercel 계정 생성
+
+계정을 만드려면 [vercel](vecel.com/signup)에 방문해서 `hobby` 플랜을 선택하여 계정을 생성하고 github와 연동 또한 설정해야 한다.
+
+### Connect and deploy your project
+
+그 다음, 아래와 같은 화면으로 이동할 텐데 여기서 방금 만든 깃허브 레포를 선택하고 import 할 수 있다.  
+![next-vercel-project](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fimport-git-repo.png&w=1080&q=75)
+
+그리고 `Deploy` 버튼을 클릭하면 아래 화면처럼 프로젝트 배포가 완료된 것을 볼 수 있다.
+![next-vercel-project1](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fdeployed-project.png&w=1080&q=75)
+
+Vercel과 깃허브 repo와 연동을 함으로서 변경사항을 **main** 에 push하면 언제든지 자동으로 재배포를 수행하며, 별도 설정이 필요 없다.
+
+pull request를 열 때에도 미리보기가 가능하여 배포 오류를 미리 확인하고 프로젝트의 미리보기를 팀원들과 공유할 수 있다.
+
+---
+
+### Create a Postgres database
+
+다음으로 데이터베이스를 설정하기 위해 <u>**Continue to Dashboard**</u>를 클릭하고 프로젝트 대시보드에서 `Storage` 탭을 선택한다.
+
+그런 다음, **`Connect Store`** → **`Create New`** → **`Postgres`** → **`Continue`** 를 선택.  
+![connect-database](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fcreate-database.png&w=1080&q=75)
+
+약관 수락 후 데이터베이스의 이름을 지정하고 데이터베이스 지역을  
+\*_Washington D.C(iad1)_ 로 설정한다.
+
+> 이는 모든 Vercel 프로젝트의 기본 지역이므로  
+> 데이터베이스를 응용프로그램 코드와 같은 지역이나 가까운 곳으로 설정하는 것이  
+> 데이터 요청의 지연 시간을 줄일 수 있음.  
+> 한국 기준으로는 `icn1(서울)` > ![vercel-database-region](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fdatabase-region.png&w=1080&q=75)
+
+연결하면 `.env.local` 탭으로 이동, `Show secret` 및 `Copy Snippet`을 클릭하여
+비밀키를 복사한다.  
+![database-key](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Fdatabase-dashboard.png&w=1080&q=75)
+
+그리고 코드 에디터 (VSCode 등)로 이동하여 `.env.example` 파일을 `.env`로 이름을 변경하고  
+Vercel에서 복사한 내용을 붙여넣는다.
+
+> **!중요** : `.gitignore` 파일로 이동하여 `.env` 가 무시되도록 해서 비밀키가 노출되지 않도록 해야 한다.
+
+마지막으로 터미널에서 `npm i @vercel/postgres`를 실행하여 [Vercel Postgres SDK](https://vercel.com/docs/storage/vercel-postgres/sdk)를 설치한다.
+
+### Seed your database
+
+데이터베이스를 생성했으면, 이제 초기 데이터인 시드를 심을 차례이다.  
+이번 예제의 경우 대시보드를 구축하는 동안 사용할 데이터를 가져오게 할거고
+
+프로젝트의 `/app` 폴더 안에 `seed` 라는 폴더가 있다.  
+이 폴더엔 `route.ts` 라는 Next.js 라우트 핸들러가 포함되어 있으며, 이 핸들러를 사용해서 데이터베이스에 데이터를 저장할 수 있다.
+
+이 과정은 데이터베이스를 채우기 위해 브라우저에서 접근할 수 있는 서버 사이드 엔드포인트를 생성한다.
+
+### Exploring your database
