@@ -609,3 +609,91 @@ Postgres와 같은 관계형 데이터베이스의 경우 SQL 또는 Prisma와 �
 2. 서버 컴포넌트는 서버에서 실행되므로 비용이 많이 드는 data fetch 로직을 서버에서 실행하고  
    결과만 클라이언트에 전송할 수 있다.
 3. 앞서 말했듯이 서버 컴포넌트는 서버에서 실행되므로 API 레이어를 추가로 사용하지 않고도 데이터베이스에 직접 쿼리할 수 있다.
+
+### Using SQL
+
+지금 하고 있는 프로젝트의 dashboard에선 `Vercel Postgres SDK`와 `SQL`을 사용해서 데이터베이스 쿼리를 작성하는데  
+SQL을 사용하는데에는 몇가지 이유가 있다.
+
+1. SQL은 관계형 데이터베이스를 쿼리하는 업계 표준입니다(예: ORM은 내부적으로 SQL을 생성합니다).
+
+2. SQL에 대한 기본적인 이해는 관계형 데이터베이스의 기본 개념을 이해하는 데 도움이 되며, 이를 통해 다른 도구에도 지식을 적용할 수 있습니다.
+
+3. SQL은 특정 데이터를 가져오고 조작하는 데 유용한 다양한 기능을 제공합니다.
+
+4. Vercel Postgres SDK는 SQL 인젝션에 대한 보호 기능을 제공합니다.
+
+`/app/lib/data.ts` 파일을 보면 `sql` 함수를 `@vercel/postgres` 로부터 가져온 것을 볼 수 있는데  
+이 함수가 데이터베이스에 접근할 수 있게 허용한다.
+
+```javascript
+import { sql } from "@vercel/postgres";
+
+// ...
+```
+
+`sql` 을 모든 서버 컴포넌트에서 호출할 수 있지만 컴포넌트를 더 쉽게 탐색할 수 있도록 예제처럼 `data.ts` 와 같은 파일에 모아두는 것이 좋다!
+
+### Fetching data for the dashboard overview page
+
+지금까지 data를 fetch하는 다른 방법에 대해 알아봤는데  
+이번에는 실제로 dashboard overview 페이지에서 data를 불러와보려 한다.
+
+```javascript
+import { Card } from "@/app/ui/dashboard/cards";
+import RevenueChart from "@/app/ui/dashboard/revenue-chart";
+import LatestInvoices from "@/app/ui/dashboard/latest-invoices";
+import { lusitana } from "@/app/ui/fonts";
+
+export default async function Page() {
+  return (
+    <main>
+      <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
+        Dashboard
+      </h1>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* <Card title="Collected" value={totalPaidInvoices} type="collected" /> */}
+        {/* <Card title="Pending" value={totalPendingInvoices} type="pending" /> */}
+        {/* <Card title="Total Invoices" value={numberOfInvoices} type="invoices" /> */}
+        {/* <Card
+          title="Total Customers"
+          value={numberOfCustomers}
+          type="customers"
+        /> */}
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
+        {/* <RevenueChart revenue={revenue}  /> */}
+        {/* <LatestInvoices latestInvoices={latestInvoices} /> */}
+      </div>
+    </main>
+  );
+}
+```
+
+코드에 대한 해석은 다음과 같다.
+
+- `Page`는 `async` 컴포넌트이며, 이는 `await`을 사용하여 data를 fetch할 수 있게 해준다.
+
+- 3개의 컴포넌트에 데이터를 전달하는데 아직 각 컴포넌트가 준비가 되지 않았으므로 에러방지를 위해 주석처리 함.
+
+### Fetching data for `<RevenueChart />`
+
+`<RevenueChart />`에 데이터를 전달해주기 위해 dashboard overview page에서 `fetchRevenue` 함수를 `data.ts` 파일로부터 import 해온 뒤, 컴포넌트 내부에서 호출한다.
+
+```javascript
+import { Card } from "@/app/ui/dashboard/cards";
+import RevenueChart from "@/app/ui/dashboard/revenue-chart";
+import LatestInvoices from "@/app/ui/dashboard/latest-invoices";
+import { lusitana } from "@/app/ui/fonts";
+import { fetchRevenue } from "@/app/lib/data";
+
+export default async function Page() {
+  const revenue = await fetchRevenue();
+  // ...
+}
+```
+
+그리고 `<RevenueChart />` 컴포넌트 내 주석을 해제하면 다음과 같은 화면을 볼 수 있다.  
+![revenue-chart-image](https://nextjs.org/_next/image?url=%2Flearn%2Fdark%2Frecent-revenue.png&w=1080&q=75)
+
+### Fetching data for `<LatestInvoices />`
